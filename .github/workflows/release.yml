@@ -60,7 +60,7 @@ jobs:
             "$( (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant() )  $($_.Name)"
           } | Set-Content artifacts/release/SHA256SUMS -Encoding ascii
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: PDB-${{ inputs.version }}
           path: |
