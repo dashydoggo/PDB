@@ -1,0 +1,29 @@
+# .NET and WinUI
+**/bin/
+**/obj/
+.packages/
+artifacts/
+*.user
+*.suo
+*.pdb
+
+# WiX
+*.wixpdb
+
+# IDE and operating system
+.vs/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local settings and signing material
+settings.json
+*.pfx
+*.snk
+.env
+
+# Local validated prototype, retained only for rollback
+/src/Program.cs
+/src/ShortcutRegistrar.cs
+/scripts/*-prototype.ps1

@@ -1,0 +1,80 @@
+name: release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Semantic version without a v prefix
+        required: true
+        type: string
+      accept_wix_eula:
+        description: I am authorized to accept the WiX 7 OSMF EULA for this build
+        required: true
+        default: false
+        type: boolean
+      publish_github_release:
+        description: Create the GitHub release after building
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+      DOTNET_NOLOGO: '1'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.401
+          cache: true
+          cache-dependency-path: '**/packages.lock.json'
+
+      - name: Validate release inputs
+        shell: pwsh
+        run: |
+          if ('${{ inputs.version }}' -notmatch '^\d+\.\d+\.\d+$') { throw 'Version must be MAJOR.MINOR.PATCH.' }
+          if ('${{ inputs.accept_wix_eula }}' -ne 'true') { throw 'WiX 7 EULA acknowledgement is required to build the MSI.' }
+
+      - name: Restore locked dependencies
+        shell: pwsh
+        run: |
+          dotnet restore src/DiscordRelay.Worker/DiscordRelay.Worker.csproj --runtime win-x64 --locked-mode
+          dotnet restore src/DiscordRelay.Settings/DiscordRelay.Settings.csproj --runtime win-x64 --locked-mode
+          dotnet restore installer/DiscordRelay.Installer.wixproj --locked-mode
+
+      - name: Build release artifacts
+        shell: pwsh
+        env:
+          WIX_ACCEPT_EULA: 'true'
+        run: |
+          ./scripts/publish.ps1 -Version '${{ inputs.version }}'
+          ./scripts/build-msi.ps1 -Version '${{ inputs.version }}'
+          Get-ChildItem artifacts/release/*.zip, artifacts/msi/*.msi | ForEach-Object {
+            "$( (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant() )  $($_.Name)"
+          } | Set-Content artifacts/release/SHA256SUMS -Encoding ascii
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PDB-${{ inputs.version }}
+          path: |
+            artifacts/release/*
+            artifacts/msi/*.msi
+          if-no-files-found: error
+
+      - name: Create GitHub release
+        if: ${{ inputs.publish_github_release }}
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v${{ inputs.version }}" `
+            artifacts/release/* artifacts/msi/*.msi `
+            --title "Discord PDB ${{ inputs.version }}" `
+            --generate-notes

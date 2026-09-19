@@ -1,0 +1,23 @@
+<Project Sdk="WixToolset.Sdk/7.0.0">
+  <PropertyGroup>
+    <OutputType>Package</OutputType>
+    <DebugType>full</DebugType>
+    <AcceptEula Condition="'$(WIX_ACCEPT_EULA)' == 'true'">wix7</AcceptEula>
+    <InstallerPlatform>x64</InstallerPlatform>
+    <Platform>x64</Platform>
+    <OutputName>PDB-$(ProductVersion)-x64</OutputName>
+    <OutputPath>$(MSBuildThisFileDirectory)..\artifacts\msi\</OutputPath>
+    <DefaultCompressionLevel>high</DefaultCompressionLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <SuppressIces>ICE03;ICE38;ICE64;ICE91</SuppressIces>
+    <DefineConstants>StageDir=$(StageDir);ProductVersion=$(ProductVersion)</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <BindPath Include="$(StageDir)">
+      <BindName>Stage</BindName>
+    </BindPath>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="WixToolset.UI.wixext" />
+  </ItemGroup>
+</Project>

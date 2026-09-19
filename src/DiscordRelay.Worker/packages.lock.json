@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "dependencies": {
+    "net10.0-windows10.0.19041": {
+      "Microsoft.Windows.SDK.BuildTools": {
+        "type": "Direct",
+        "requested": "[10.0.26100.9169, )",
+        "resolved": "10.0.26100.9169",
+        "contentHash": "aFgIz/1WyMVTfdbkWSPiGb/MTiU3ynNUgCIDvJXdVloimUcm064xskrgXqdEjY3yHQgr2YrW7/Xd36pvD8T+ug=="
+      },
+      "PDB.Core": {
+        "type": "Project"
+      }
+    },
+    "net10.0-windows10.0.19041/win-x64": {}
+  }
+}

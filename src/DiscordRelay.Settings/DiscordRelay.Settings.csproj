@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.19041.0</TargetPlatformMinVersion>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <PlatformTarget>x64</PlatformTarget>
+    <SelfContained>true</SelfContained>
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <UseWinUI>true</UseWinUI>
+    <EnableMsixTooling>true</EnableMsixTooling>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AssemblyName>PDB</AssemblyName>
+    <ApplicationIcon>..\..\assets\pdb.ico</ApplicationIcon>
+    <RootNamespace>DashyDen.DiscordRelay.SettingsApp</RootNamespace>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Include="..\..\assets\pdb.png" Link="Assets\pdb.png" CopyToOutputDirectory="PreserveNewest" />
+    <ProjectReference Include="..\DiscordRelay.Core\DiscordRelay.Core.csproj" />
+    <PackageReference Include="Microsoft.WindowsAppSDK" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
+  </ItemGroup>
+</Project>

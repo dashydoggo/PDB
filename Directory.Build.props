@@ -1,0 +1,15 @@
+<Project>
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <DebugType>portable</DebugType>
+    <Company>DashyDen</Company>
+    <Authors>DashyDen</Authors>
+    <Copyright>Copyright © DashyDen</Copyright>
+    <Product>Discord PDB</Product>
+  </PropertyGroup>
+</Project>

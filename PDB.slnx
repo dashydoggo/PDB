@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="src/DiscordRelay.Core/DiscordRelay.Core.csproj" />
+  <Project Path="src/DiscordRelay.Worker/DiscordRelay.Worker.csproj" />
+  <Project Path="src/DiscordRelay.Settings/DiscordRelay.Settings.csproj" />
+  <Project Path="installer/DiscordRelay.Installer.wixproj" />
+</Solution>

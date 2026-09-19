@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+  <Package
+      Name="Discord PDB"
+      Manufacturer="DashyDen"
+      Version="$(ProductVersion)"
+      UpgradeCode="{7C20E70A-CB84-4C21-94D9-A34F873D413B}"
+      Scope="perUser"
+      InstallerVersion="500"
+      Compressed="yes">
+
+    <SummaryInformation Description="Privacy-preserving Discord notification banners" />
+    <MajorUpgrade DowngradeErrorMessage="A newer Discord PDB version is already installed." />
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+    <Icon Id="PdbIcon" SourceFile="..\assets\pdb.ico" />
+    <Property Id="ARPPRODUCTICON" Value="PdbIcon" />
+
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="LocalProgramsFolder" Name="Programs">
+        <Directory Id="INSTALLFOLDER" Name="Discord PDB">
+          <Component Id="PerUserRegistration" Guid="*">
+            <RegistryValue Root="HKCU"
+                           Key="Software\Microsoft\Windows\CurrentVersion\Run"
+                           Name="Discord PDB"
+                           Type="string"
+                           Value="&quot;[INSTALLFOLDER]PDB.Worker.exe&quot; --background"
+                           KeyPath="yes" />
+            <RegistryValue Root="HKCU"
+                           Key="Software\Classes\AppUserModelId\DashyDen.DiscordPDB"
+                           Name="DisplayName"
+                           Type="string"
+                           Value="Discord PDB" />
+            <RegistryValue Root="HKCU"
+                           Key="Software\Classes\AppUserModelId\DashyDen.DiscordPDB"
+                           Name="IconUri"
+                           Type="string"
+                           Value="[INSTALLFOLDER]Assets\pdb.png" />
+            <RegistryValue Root="HKCU"
+                           Key="Software\Classes\AppUserModelId\DashyDen.DiscordPDB"
+                           Name="IconBackgroundColor"
+                           Type="string"
+                           Value="#8B8D98" />
+          </Component>
+        </Directory>
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ApplicationProgramsFolder" Name="Discord PDB">
+        <Component Id="StartMenuShortcut" Guid="*">
+          <Shortcut Id="SettingsShortcut"
+                    Name="Discord PDB"
+                    Description="Configure Discord PDB"
+                    Target="[INSTALLFOLDER]PDB.exe"
+                    WorkingDirectory="INSTALLFOLDER"
+                    Icon="PdbIcon">
+            <ShortcutProperty Key="System.AppUserModel.ID" Value="DashyDen.DiscordPDB" />
+          </Shortcut>
+          <RemoveFolder Id="RemoveApplicationProgramsFolder" On="uninstall" />
+          <RegistryValue Root="HKCU"
+                         Key="Software\DashyDen\PDB"
+                         Name="StartMenuShortcut"
+                         Type="integer"
+                         Value="1"
+                         KeyPath="yes" />
+        </Component>
+      </Directory>
+    </StandardDirectory>
+
+    <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
+    <WixVariable Id="WixUILicenseRtf" Value="license.rtf" />
+
+    <Files Include="!(bindpath.Stage)\**" Directory="INSTALLFOLDER" />
+  </Package>
+</Wix>

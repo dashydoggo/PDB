@@ -1,0 +1,135 @@
+<Window
+    x:Class="DashyDen.DiscordRelay.SettingsApp.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Title="Discord PDB">
+
+    <Grid x:Name="RootGrid" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <Grid.Resources>
+            <Style x:Key="SettingsCardStyle" TargetType="Border">
+                <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+                <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="CornerRadius" Value="8" />
+                <Setter Property="Padding" Value="20" />
+            </Style>
+        </Grid.Resources>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="48" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid x:Name="AppTitleBar" Grid.Row="0" Padding="16,0,8,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Image Source="Assets/pdb.png" Width="22" Height="22" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="1" Margin="10,0,0,0" Text="Discord PDB"
+                       Style="{ThemeResource CaptionTextBlockStyle}" VerticalAlignment="Center" />
+        </Grid>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel MaxWidth="760" Padding="28,20,28,36" Spacing="16" HorizontalAlignment="Stretch">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Discord PDB" Style="{ThemeResource TitleLargeTextBlockStyle}" />
+                    <TextBlock Text="Private Discord banners without message content."
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                </StackPanel>
+
+                <InfoBar x:Name="StatusInfoBar" IsOpen="True" Severity="Informational"
+                         Title="Status" Message="Loading…" IsClosable="False" />
+
+                <Border Style="{StaticResource SettingsCardStyle}">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="Setup" Style="{ThemeResource SubtitleTextBlockStyle}" />
+                        <TextBlock Text="1. Grant notification access." />
+                        <TextBlock Text="2. Turn off Discord banners. Keep Discord Notification Center enabled." TextWrapping="Wrap" />
+                        <TextBlock Text="3. Keep Discord PDB banners enabled." />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource SettingsCardStyle}">
+                    <StackPanel Spacing="14">
+                        <TextBlock Text="General" Style="{ThemeResource SubtitleTextBlockStyle}" />
+                        <ToggleSwitch x:Name="RelayEnabledToggle" Header="Enable PDB"
+                                      OnContent="On" OffContent="Off" />
+                        <ToggleSwitch x:Name="StartupToggle" Header="Start relay when I sign in"
+                                      OnContent="On" OffContent="Off" />
+                        <ToggleSwitch x:Name="OpenExactLinksToggle" Header="Open exact Discord links"
+                                      OnContent="On" OffContent="Off" />
+                        <ToggleSwitch x:Name="OpenDirectMessagesToggle" Header="Open Direct Messages when no link is available"
+                                      OnContent="On" OffContent="Off" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource SettingsCardStyle}">
+                    <StackPanel Spacing="14">
+                        <TextBlock Text="Discord sources" Style="{ThemeResource SubtitleTextBlockStyle}" />
+                        <ToggleSwitch x:Name="StableToggle" Header="Discord Stable" OnContent="Included" OffContent="Ignored" />
+                        <ToggleSwitch x:Name="CanaryToggle" Header="Discord Canary" OnContent="Included" OffContent="Ignored" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource SettingsCardStyle}">
+                    <StackPanel Spacing="14">
+                        <TextBlock Text="Appearance and privacy" Style="{ThemeResource SubtitleTextBlockStyle}" />
+                        <ToggleSwitch x:Name="AvatarToggle" Header="Show sender profile pictures"
+                                      OnContent="Shown" OffContent="Hidden" />
+                        <ToggleSwitch x:Name="HistoryToggle" Header="Keep private notifications in Notification Center"
+                                      OnContent="Keep" OffContent="Banner only" />
+                        <ComboBox x:Name="TitleModeCombo" Header="Notification title" HorizontalAlignment="Stretch" />
+                        <TextBox x:Name="BodyTextBox" Header="Replacement message text" MaxLength="80"
+                                 PlaceholderText="New message" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource SettingsCardStyle}">
+                    <StackPanel Spacing="14">
+                        <TextBlock Text="Sound" Style="{ThemeResource SubtitleTextBlockStyle}" />
+                        <ComboBox x:Name="SoundCombo" Header="Notification sound" HorizontalAlignment="Stretch"
+                                  SelectionChanged="SoundCombo_SelectionChanged" />
+                        <Grid x:Name="CustomSoundPanel" ColumnSpacing="8" Visibility="Collapsed">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="CustomSoundPathBox" Header="Custom WAV file" IsReadOnly="True"
+                                     PlaceholderText="Select a .wav file" />
+                            <Button Grid.Column="1" Margin="0,24,0,0" Content="Browse…" Click="BrowseSound_Click" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource SettingsCardStyle}">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="Windows integration" Style="{ThemeResource SubtitleTextBlockStyle}" />
+                        <TextBlock x:Name="DetailsText" TextWrapping="Wrap"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Content="Grant access" Click="GrantAccess_Click" />
+                            <Button Content="Windows settings" Click="OpenNotificationSettings_Click" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <InfoBar x:Name="SaveInfoBar" IsOpen="False" IsClosable="True" />
+
+                <Grid ColumnSpacing="10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Button Grid.Column="1" Content="Test" Click="TestNotification_Click" />
+                    <Button Grid.Column="2" Content="Save" Style="{StaticResource AccentButtonStyle}"
+                            Click="Save_Click" />
+                </Grid>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+
+</Window>
