@@ -6,6 +6,6 @@
   <ItemGroup>
     <PackageVersion Include="Microsoft.WindowsAppSDK" Version="2.5.1" />
     <PackageVersion Include="WixToolset.UI.wixext" Version="7.0.0" />
-    <PackageVersion Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.9169" />
+    <PackageVersion Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2705" />
   </ItemGroup>
 </Project>
