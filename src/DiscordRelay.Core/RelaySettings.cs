@@ -82,13 +82,14 @@ public sealed record RelaySettings
 
 public sealed record RelayStatus
 {
-    public string Version { get; init; } = "1.0.0";
+    public string Version { get; init; } = "1.0.1";
     public int ProcessId { get; init; }
     public int SessionId { get; init; }
     public DateTimeOffset StartedAt { get; init; }
     public DateTimeOffset LastScanAt { get; init; }
     public DateTimeOffset? LastRelayAt { get; init; }
     public int RelayedCount { get; init; }
+    public int? LastRelayLatencyMilliseconds { get; init; }
     public string AccessStatus { get; init; } = "Unknown";
     public string? Error { get; init; }
     public string? SettingsWarning { get; init; }

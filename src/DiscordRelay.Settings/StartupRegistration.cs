@@ -10,6 +10,7 @@ internal static class StartupRegistration
     internal static void Apply(bool enabled)
     {
         using RegistryKey key = Registry.CurrentUser.CreateSubKey(RunKeyPath);
+        key.DeleteValue("Discord Notification Relay", false);
         if (!enabled)
         {
             key.DeleteValue(DashyDen.DiscordRelay.ProductPaths.StartupValueName, false);

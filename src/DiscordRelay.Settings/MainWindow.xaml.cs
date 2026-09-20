@@ -254,7 +254,10 @@ public sealed partial class MainWindow : Window
         StatusInfoBar.Message = healthy
             ? $"Running. {status.RelayedCount} notification(s) relayed."
             : status.Error ?? $"Notification access: {status.AccessStatus}";
-        DetailsText.Text = $"Version {status.Version} · Last scan {status.LastScanAt.LocalDateTime:G}";
+        DetailsText.Text = $"Version {status.Version} · Last scan {status.LastScanAt.LocalDateTime:G}" +
+            (status.LastRelayLatencyMilliseconds is null
+                ? string.Empty
+                : $" · {status.LastRelayLatencyMilliseconds} ms");
     }
 
     private void ShowResult(InfoBarSeverity severity, string title, string message)

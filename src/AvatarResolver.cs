@@ -7,6 +7,12 @@ using System.Xml;
 
 namespace DashyDen.PDB.Infrastructure
 {
+    internal sealed class RecoveredNotificationDetails
+    {
+        internal string AvatarPath { get; set; }
+        internal string ActivationUri { get; set; }
+    }
+
     internal static class AvatarResolver
     {
         private const int SqliteOk = 0;
@@ -26,8 +32,13 @@ namespace DashyDen.PDB.Infrastructure
             "AND n.PayloadType = 'Xml' " +
             "LIMIT 1";
 
-        internal static string TryRecover(uint notificationId, string dataDirectory)
+        internal static RecoveredNotificationDetails TryRecoverDetails(
+            uint notificationId,
+            string dataDirectory,
+            bool includeAvatar,
+            bool includeActivation)
         {
+            var details = new RecoveredNotificationDetails();
             for (int attempt = 0; attempt < 3; attempt++)
             {
                 try
@@ -35,13 +46,27 @@ namespace DashyDen.PDB.Infrastructure
                     byte[] payload = ReadPayload(notificationId);
                     if (payload == null || payload.Length == 0)
                     {
-                        return null;
+                        if (attempt < 2)
+                        {
+                            Thread.Sleep(10);
+                            continue;
+                        }
+                        return details;
+                    }
+
+                    if (includeActivation)
+                    {
+                        details.ActivationUri = ExtractSafeActivationUri(payload);
+                    }
+                    if (!includeAvatar)
+                    {
+                        return details;
                     }
 
                     string sourcePath = ExtractSafeSourcePath(payload);
                     if (sourcePath == null)
                     {
-                        return null;
+                        return details;
                     }
 
                     string avatarDirectory = Path.Combine(dataDirectory, "avatars");
@@ -50,7 +75,6 @@ namespace DashyDen.PDB.Infrastructure
                         avatarDirectory,
                         notificationId.ToString() + ".png");
                     string temporaryPath = destinationPath + ".tmp";
-
                     File.Copy(sourcePath, temporaryPath, true);
                     if (File.Exists(destinationPath))
                     {
@@ -58,35 +82,18 @@ namespace DashyDen.PDB.Infrastructure
                     }
                     File.Move(temporaryPath, destinationPath);
                     TrimCache(avatarDirectory);
-                    return destinationPath;
+                    details.AvatarPath = destinationPath;
+                    return details;
                 }
                 catch
                 {
                     if (attempt < 2)
                     {
-                        Thread.Sleep(25 * (attempt + 1));
+                        Thread.Sleep(10);
                     }
                 }
             }
-
-            return null;
-        }
-
-        internal static string TryRecoverActivationUri(uint notificationId)
-        {
-            try
-            {
-                byte[] payload = ReadPayload(notificationId);
-                if (payload == null || payload.Length == 0)
-                {
-                    return null;
-                }
-                return ExtractSafeActivationUri(payload);
-            }
-            catch
-            {
-                return null;
-            }
+            return details;
         }
 
         private static byte[] ReadPayload(uint notificationId)

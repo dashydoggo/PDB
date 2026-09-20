@@ -6,7 +6,7 @@ Discord PDB is independent software and is not affiliated with Discord Inc.
 
 ## Setup
 
-1. Install `PDB-1.0.0-x64.msi`.
+1. Install `PDB-1.0.1-x64.msi`.
 2. Open **Discord PDB**.
 3. Select **Grant access**.
 4. In Windows notification settings:
@@ -37,9 +37,9 @@ Requirements are pinned in the repository.
 ```powershell
 dotnet restore src/DiscordRelay.Worker/DiscordRelay.Worker.csproj --runtime win-x64 --locked-mode
 dotnet restore src/DiscordRelay.Settings/DiscordRelay.Settings.csproj --runtime win-x64 --locked-mode
-./scripts/publish.ps1 -Version 1.0.0
+./scripts/publish.ps1 -Version 1.0.1
 $env:WIX_ACCEPT_EULA = 'true'
-./scripts/build-msi.ps1 -Version 1.0.0
+./scripts/build-msi.ps1 -Version 1.0.1
 ```
 
 WiX 7 requires acceptance of its OSMF EULA. See [docs/releasing.md](docs/releasing.md).

@@ -6,7 +6,15 @@ public static class ProductPaths
     public const string DisplayName = "Discord PDB";
     public const string AppUserModelId = "DashyDen.DiscordPDB";
     public const string StartupValueName = "Discord PDB";
-    public const string WorkerMutexName = "Local\\DashyDen.DiscordPDB.Worker";
+    public const string WorkerMutexName = "Global\\DashyDen.DiscordPDB.Worker";
+
+    public static IReadOnlyList<string> WorkerMutexNames { get; } = new[]
+    {
+        WorkerMutexName,
+        "Local\\DashyDen.DiscordPDB.Worker",
+        "Local\\DashyDen.DiscordRelay.Worker",
+        "Local\\DashyDen.Discord.Worker"
+    };
 
     public static string DataDirectory { get; } = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),

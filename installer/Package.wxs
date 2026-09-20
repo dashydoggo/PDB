@@ -26,6 +26,10 @@
                            Type="string"
                            Value="&quot;[INSTALLFOLDER]PDB.Worker.exe&quot; --background"
                            KeyPath="yes" />
+            <RemoveRegistryValue Id="RemoveLegacyRun"
+                                 Root="HKCU"
+                                 Key="Software\Microsoft\Windows\CurrentVersion\Run"
+                                 Name="Discord Notification Relay" />
             <RegistryValue Root="HKCU"
                            Key="Software\Classes\AppUserModelId\DashyDen.DiscordPDB"
                            Name="DisplayName"

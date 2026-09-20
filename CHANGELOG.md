@@ -2,7 +2,18 @@
 
 All notable changes will be documented in this file. Versioning follows Semantic Versioning.
 
-## [Unreleased]
+## [1.0.1] - 2026-09-20
+
+### Fixed
+
+- Removed obsolete relay startup entries during upgrades.
+- Blocked legacy workers with shared mutex names.
+- Reduced source processing to one metadata query.
+- Removed the event fallback delay.
+- Replaced the current PDB notification instead of stacking entries.
+- Added measured relay latency to status.
+
+## [1.0.0] - 2026-09-18
 
 ### Added
 

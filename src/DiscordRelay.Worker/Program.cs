@@ -1,12 +1,13 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Microsoft.Win32;
 using DashyDen.DiscordRelay;
 
 namespace DashyDen.DiscordRelay.Worker;
 
 internal static class Program
 {
-    internal const string Version = "1.0.0";
+    internal const string Version = "1.0.1";
 
     [MTAThread]
     private static int Main(string[] args)
@@ -60,13 +61,44 @@ internal static class Program
                 return 0;
             }
 
-            using var mutex = new Mutex(true, ProductPaths.WorkerMutexName, out bool created);
-            if (!created)
+            var heldMutexes = new List<Mutex>();
+            try
             {
-                return 0;
-            }
+                var primaryMutex = new Mutex(
+                    true,
+                    ProductPaths.WorkerMutexNames[0],
+                    out bool primaryCreated);
+                if (!primaryCreated)
+                {
+                    primaryMutex.Dispose();
+                    return 0;
+                }
+                heldMutexes.Add(primaryMutex);
 
-            return new RelayWorker().RunAsync().GetAwaiter().GetResult();
+                LegacyInstallationCleanup.Run();
+                for (int index = 1; index < ProductPaths.WorkerMutexNames.Count; index++)
+                {
+                    var mutex = new Mutex(true, ProductPaths.WorkerMutexNames[index], out bool created);
+                    if (created)
+                    {
+                        heldMutexes.Add(mutex);
+                    }
+                    else
+                    {
+                        mutex.Dispose();
+                        WorkerLog.Write("A legacy worker mutex is already held.");
+                    }
+                }
+
+                return new RelayWorker().RunAsync().GetAwaiter().GetResult();
+            }
+            finally
+            {
+                foreach (Mutex mutex in heldMutexes)
+                {
+                    mutex.Dispose();
+                }
+            }
         }
         catch (Exception exception)
         {
@@ -85,6 +117,79 @@ internal static class Program
             }
         }
         return null;
+    }
+}
+
+internal static class LegacyInstallationCleanup
+{
+    internal static void Run()
+    {
+        try
+        {
+            using RegistryKey? runKey = Registry.CurrentUser.OpenSubKey(
+                @"Software\Microsoft\Windows\CurrentVersion\Run",
+                writable: true);
+            runKey?.DeleteValue("Discord Notification Relay", throwOnMissingValue: false);
+        }
+        catch (Exception exception)
+        {
+            WorkerLog.Write("Legacy startup cleanup failed: " + WorkerLog.SafeException(exception));
+        }
+
+        string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        StopOtherPdbProcesses(
+            Path.Combine(localAppData, "Programs", "Discord PDB", "PDB.Worker.exe"));
+        StopVerifiedLegacyProcess(
+            "DiscordRelay.Worker",
+            Path.Combine(localAppData, "Programs", "Discord Notification Relay", "DiscordRelay.Worker.exe"));
+        StopVerifiedLegacyProcess(
+            "DiscordNotificationRelay",
+            Path.Combine(localAppData, "DashyDen", "DiscordNotificationRelay", "DiscordNotificationRelay.exe"));
+    }
+
+    private static void StopOtherPdbProcesses(string expectedPath)
+    {
+        foreach (Process process in Process.GetProcessesByName("PDB.Worker"))
+        {
+            try
+            {
+                if (process.Id != Environment.ProcessId &&
+                    process.MainModule?.FileName.Equals(
+                        expectedPath,
+                        StringComparison.OrdinalIgnoreCase) == true)
+                {
+                    process.Kill(entireProcessTree: true);
+                    process.WaitForExit(5_000);
+                    WorkerLog.Write("Stopped an older verified PDB worker process.");
+                }
+            }
+            catch (Exception exception)
+            {
+                WorkerLog.Write("PDB process cleanup failed: " + WorkerLog.SafeException(exception));
+            }
+        }
+    }
+
+    private static void StopVerifiedLegacyProcess(string processName, string expectedPath)
+    {
+        foreach (Process process in Process.GetProcessesByName(processName))
+        {
+            try
+            {
+                if (process.MainModule?.FileName.Equals(
+                        expectedPath,
+                        StringComparison.OrdinalIgnoreCase) == true)
+                {
+                    process.Kill(entireProcessTree: true);
+                    process.WaitForExit(5_000);
+                    WorkerLog.Write("Stopped a verified legacy relay process.");
+                }
+            }
+            catch (Exception exception)
+            {
+                WorkerLog.Write("Legacy process cleanup failed: " + WorkerLog.SafeException(exception));
+            }
+        }
     }
 }
 

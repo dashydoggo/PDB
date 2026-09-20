@@ -13,6 +13,7 @@ internal sealed class RelayWorker
     private DateTimeOffset _lastScanAt = DateTimeOffset.Now;
     private DateTimeOffset? _lastRelayAt;
     private int _relayedCount;
+    private int? _lastRelayLatencyMilliseconds;
     private DateTime _settingsWriteTimeUtc = DateTime.MinValue;
     private RelaySettings _settings = new();
     private string? _settingsWarning;
@@ -121,12 +122,13 @@ internal sealed class RelayWorker
                     }
 
                     string title = GetPrivateTitle(notification);
-                    string? avatarPath = _settings.ShowSenderAvatar
-                        ? AvatarResolver.TryRecover(notification.Id, ProductPaths.DataDirectory)
-                        : null;
-                    string? activationUri = _settings.OpenDiscordOnClick
-                        ? AvatarResolver.TryRecoverActivationUri(notification.Id)
-                        : null;
+                    RecoveredNotificationDetails details = AvatarResolver.TryRecoverDetails(
+                        notification.Id,
+                        ProductPaths.DataDirectory,
+                        _settings.ShowSenderAvatar,
+                        _settings.OpenDiscordOnClick);
+                    string? avatarPath = details.AvatarPath;
+                    string? activationUri = details.ActivationUri;
                     ToastService.Show(
                         title,
                         _settings.BodyText,
@@ -135,10 +137,15 @@ internal sealed class RelayWorker
                         _settings,
                         "current");
                     _lastRelayAt = DateTimeOffset.Now;
+                    _lastRelayLatencyMilliseconds = (int)Math.Min(
+                        int.MaxValue,
+                        Math.Max(0, Math.Round(
+                            (_lastRelayAt.Value - notification.CreationTime).TotalMilliseconds)));
                     _relayedCount++;
                     WorkerLog.Write(
                         $"Relayed Discord notification; id={notification.Id}; " +
-                        $"titleLength={title.Length}; avatar={(avatarPath is null ? "unavailable" : "local")}; " +
+                        $"latencyMs={_lastRelayLatencyMilliseconds}; titleLength={title.Length}; " +
+                        $"avatar={(avatarPath is null ? "unavailable" : "local")}; " +
                         $"activation={(activationUri is not null ? "exact" : _settings.OpenDirectMessagesWhenLinkUnavailable ? "fallback" : "disabled")}; sound={_settings.Sound}.");
                     SaveStatus(access.ToString(), null);
                 }
@@ -229,6 +236,7 @@ internal sealed class RelayWorker
                 LastScanAt = _lastScanAt,
                 LastRelayAt = _lastRelayAt,
                 RelayedCount = _relayedCount,
+                LastRelayLatencyMilliseconds = _lastRelayLatencyMilliseconds,
                 AccessStatus = accessStatus,
                 Error = error,
                 SettingsWarning = _settingsWarning

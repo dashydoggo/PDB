@@ -9,8 +9,8 @@
     <AssemblyName>PDB.Worker</AssemblyName>
     <ApplicationIcon>..\..\assets\pdb.ico</ApplicationIcon>
     <RootNamespace>DashyDen.DiscordRelay.Worker</RootNamespace>
-    <Version>1.0.0</Version>
-    <NoWarn>$(NoWarn);CS8600;CS8603</NoWarn>
+    <Version>1.0.1</Version>
+    <NoWarn>$(NoWarn);CS8600;CS8603;CS8618;CS8625</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiscordRelay.Core\DiscordRelay.Core.csproj" />
