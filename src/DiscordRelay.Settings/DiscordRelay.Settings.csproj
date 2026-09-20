@@ -14,7 +14,7 @@
     <AssemblyName>PDB</AssemblyName>
     <ApplicationIcon>..\..\assets\pdb.ico</ApplicationIcon>
     <RootNamespace>DashyDen.DiscordRelay.SettingsApp</RootNamespace>
-    <Version>1.0.1</Version>
+    <Version>1.0.2</Version>
   </PropertyGroup>
   <ItemGroup>
     <Content Include="..\..\assets\pdb.png" Link="Assets\pdb.png" CopyToOutputDirectory="PreserveNewest" />

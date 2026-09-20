@@ -6,7 +6,7 @@ Discord PDB is independent software and is not affiliated with Discord Inc.
 
 ## Setup
 
-1. Install `PDB-1.0.1-x64.msi`.
+1. Install `PDB-1.0.2-x64.msi`.
 2. Open **Discord PDB**.
 3. Select **Grant access**.
 4. In Windows notification settings:
@@ -28,7 +28,7 @@ See [docs/setup.md](docs/setup.md) for the setup wizard steps.
 
 Discord does not provide message routing data to Windows. A click opens the exact link when available. Otherwise, it opens Discord Direct Messages.
 
-Avatar recovery reads the local Windows notification database. It does not use Discord credentials or APIs. Notification text is not logged.
+Notification metadata and avatar recovery read the local Windows notification database through a read-only connection. Discord PDB uses the title and routing metadata, discards the message body, and does not log notification text. It does not use Discord credentials or APIs.
 
 ## Build
 
@@ -37,9 +37,9 @@ Requirements are pinned in the repository.
 ```powershell
 dotnet restore src/DiscordRelay.Worker/DiscordRelay.Worker.csproj --runtime win-x64 --locked-mode
 dotnet restore src/DiscordRelay.Settings/DiscordRelay.Settings.csproj --runtime win-x64 --locked-mode
-./scripts/publish.ps1 -Version 1.0.1
+./scripts/publish.ps1 -Version 1.0.2
 $env:WIX_ACCEPT_EULA = 'true'
-./scripts/build-msi.ps1 -Version 1.0.1
+./scripts/build-msi.ps1 -Version 1.0.2
 ```
 
 WiX 7 requires acceptance of its OSMF EULA. See [docs/releasing.md](docs/releasing.md).

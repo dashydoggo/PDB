@@ -8,7 +8,10 @@ namespace DashyDen.DiscordRelay.Worker;
 
 internal sealed class RelayWorker
 {
-    private const int LowLatencyPollMilliseconds = 25;
+    private const int DirectPollMilliseconds = 10;
+    private const int ListenerFallbackPollMilliseconds = 25;
+    private const int CommitRetryMilliseconds = 5;
+    private const int CommitRetryCount = 20;
     private readonly DateTimeOffset _startedAt = DateTimeOffset.Now;
     private DateTimeOffset _lastScanAt = DateTimeOffset.Now;
     private DateTimeOffset? _lastRelayAt;
@@ -87,69 +90,112 @@ internal sealed class RelayWorker
         {
             databaseWatcher?.Dispose();
             databaseWatcher = null;
-            WorkerLog.Write("Notification database event mode unavailable; using 25 ms scans. " +
+            WorkerLog.Write("Notification database event mode unavailable. " +
                 WorkerLog.SafeException(exception));
         }
 
-        IReadOnlyList<UserNotification> initial =
-            await listener.GetNotificationsAsync(NotificationKinds.Toast);
-        var observedIds = new HashSet<uint>(initial.Select(notification => notification.Id));
-        WorkerLog.Write($"Initial notification snapshot completed; count={initial.Count}.");
+        var databaseSource = new WpnNotificationSource();
+        bool directMode = databaseSource.TryInitialize();
+        var observedIds = new HashSet<uint>();
+        if (directMode)
+        {
+            WorkerLog.Write("Direct notification database mode enabled.");
+        }
+        else
+        {
+            IReadOnlyList<UserNotification> initial =
+                await listener.GetNotificationsAsync(NotificationKinds.Toast);
+            observedIds.UnionWith(initial.Select(notification => notification.Id));
+            WorkerLog.Write($"Direct notification database mode unavailable; listener fallback enabled; initialCount={initial.Count}.");
+        }
+
         SaveStatus(access.ToString(), null);
         DateTimeOffset nextStatusWrite = DateTimeOffset.Now.AddSeconds(30);
+        DateTimeOffset nextDirectRetry = DateTimeOffset.Now.AddSeconds(5);
         int consecutiveErrors = 0;
+        int consecutiveDirectErrors = 0;
 
         while (true)
         {
-            await notificationSignal.WaitAsync(LowLatencyPollMilliseconds).ConfigureAwait(false);
+            bool signaled = await notificationSignal.WaitAsync(
+                directMode ? DirectPollMilliseconds : ListenerFallbackPollMilliseconds)
+                .ConfigureAwait(false);
             try
             {
                 ReloadSettings(force: false);
-                IReadOnlyList<UserNotification> notifications =
-                    await listener.GetNotificationsAsync(NotificationKinds.Toast);
-                _lastScanAt = DateTimeOffset.Now;
-                consecutiveErrors = 0;
+                bool directReadSucceeded = false;
+                IReadOnlyList<WpnSourceNotification> directNotifications =
+                    Array.Empty<WpnSourceNotification>();
 
-                foreach (UserNotification notification in notifications)
+                if (directMode)
                 {
-                    if (!observedIds.Add(notification.Id) || !IsDiscordSource(notification))
-                    {
-                        continue;
-                    }
-                    if ((_lastScanAt - notification.CreationTime).TotalSeconds > 30 || !_settings.Enabled)
-                    {
-                        continue;
-                    }
-
-                    string title = GetPrivateTitle(notification);
-                    RecoveredNotificationDetails details = AvatarResolver.TryRecoverDetails(
-                        notification.Id,
-                        ProductPaths.DataDirectory,
-                        _settings.ShowSenderAvatar,
-                        _settings.OpenDiscordOnClick);
-                    string? avatarPath = details.AvatarPath;
-                    string? activationUri = details.ActivationUri;
-                    ToastService.Show(
-                        title,
-                        _settings.BodyText,
-                        avatarPath,
-                        activationUri,
+                    directReadSucceeded = databaseSource.TryReadNew(
                         _settings,
-                        "current");
-                    _lastRelayAt = DateTimeOffset.Now;
-                    _lastRelayLatencyMilliseconds = (int)Math.Min(
-                        int.MaxValue,
-                        Math.Max(0, Math.Round(
-                            (_lastRelayAt.Value - notification.CreationTime).TotalMilliseconds)));
-                    _relayedCount++;
-                    WorkerLog.Write(
-                        $"Relayed Discord notification; id={notification.Id}; " +
-                        $"latencyMs={_lastRelayLatencyMilliseconds}; titleLength={title.Length}; " +
-                        $"avatar={(avatarPath is null ? "unavailable" : "local")}; " +
-                        $"activation={(activationUri is not null ? "exact" : _settings.OpenDirectMessagesWhenLinkUnavailable ? "fallback" : "disabled")}; sound={_settings.Sound}.");
-                    SaveStatus(access.ToString(), null);
+                        out directNotifications);
+                    if (directReadSucceeded && signaled && directNotifications.Count == 0)
+                    {
+                        for (int retry = 0; retry < CommitRetryCount; retry++)
+                        {
+                            await Task.Delay(CommitRetryMilliseconds).ConfigureAwait(false);
+                            directReadSucceeded = databaseSource.TryReadNew(
+                                _settings,
+                                out directNotifications);
+                            if (!directReadSucceeded || directNotifications.Count != 0)
+                            {
+                                break;
+                            }
+                        }
+                    }
                 }
 
+                if (directMode && directReadSucceeded)
+                {
+                    consecutiveDirectErrors = 0;
+                    _lastScanAt = DateTimeOffset.Now;
+                    foreach (WpnSourceNotification notification in directNotifications)
+                    {
+                        if (!observedIds.Add(notification.Id) ||
+                            (_lastScanAt - notification.CreationTime).TotalSeconds > 30)
+                        {
+                            continue;
+                        }
+                        RelayNotification(
+                            notification.Id,
+                            notification.CreationTime,
+                            notification.Title,
+                            notification.AvatarPath,
+                            notification.ActivationUri,
+                            "database",
+                            access.ToString());
+                    }
+                }
+                else
+                {
+                    if (directMode)
+                    {
+                        consecutiveDirectErrors++;
+                        WorkerLog.Write($"Direct notification database read failed; attempt={consecutiveDirectErrors}; using listener fallback.");
+                        if (consecutiveDirectErrors >= 5)
+                        {
+                            directMode = false;
+                            nextDirectRetry = DateTimeOffset.Now.AddSeconds(5);
+                        }
+                    }
+                    await ScanListenerAsync(listener, observedIds, access.ToString());
+                }
+
+                if (!directMode && DateTimeOffset.Now >= nextDirectRetry)
+                {
+                    directMode = databaseSource.TryInitialize();
+                    nextDirectRetry = DateTimeOffset.Now.AddSeconds(5);
+                    if (directMode)
+                    {
+                        consecutiveDirectErrors = 0;
+                        WorkerLog.Write("Direct notification database mode restored.");
+                    }
+                }
+
+                consecutiveErrors = 0;
                 if (DateTimeOffset.Now >= nextStatusWrite)
                 {
                     SaveStatus(access.ToString(), null);
@@ -165,6 +211,72 @@ internal sealed class RelayWorker
                 await Task.Delay(Math.Min(10_000, consecutiveErrors * 1_000)).ConfigureAwait(false);
             }
         }
+    }
+
+    private async Task ScanListenerAsync(
+        UserNotificationListener listener,
+        HashSet<uint> observedIds,
+        string accessStatus)
+    {
+        IReadOnlyList<UserNotification> notifications =
+            await listener.GetNotificationsAsync(NotificationKinds.Toast);
+        _lastScanAt = DateTimeOffset.Now;
+        foreach (UserNotification notification in notifications)
+        {
+            if (!observedIds.Add(notification.Id) || !IsDiscordSource(notification))
+            {
+                continue;
+            }
+            if ((_lastScanAt - notification.CreationTime).TotalSeconds > 30 || !_settings.Enabled)
+            {
+                continue;
+            }
+
+            string title = GetPrivateTitle(notification);
+            RecoveredNotificationDetails details = AvatarResolver.TryRecoverDetails(
+                notification.Id,
+                ProductPaths.DataDirectory,
+                _settings.ShowSenderAvatar,
+                _settings.OpenDiscordOnClick);
+            RelayNotification(
+                notification.Id,
+                notification.CreationTime,
+                title,
+                details.AvatarPath,
+                details.ActivationUri,
+                "listener",
+                accessStatus);
+        }
+    }
+
+    private void RelayNotification(
+        uint notificationId,
+        DateTimeOffset creationTime,
+        string title,
+        string? avatarPath,
+        string? activationUri,
+        string source,
+        string accessStatus)
+    {
+        ToastService.Show(
+            title,
+            _settings.BodyText,
+            avatarPath,
+            activationUri,
+            _settings,
+            "current");
+        _lastRelayAt = DateTimeOffset.Now;
+        _lastRelayLatencyMilliseconds = (int)Math.Min(
+            int.MaxValue,
+            Math.Max(0, Math.Round(
+                (_lastRelayAt.Value - creationTime).TotalMilliseconds)));
+        _relayedCount++;
+        WorkerLog.Write(
+            $"Relayed Discord notification; id={notificationId}; source={source}; " +
+            $"latencyMs={_lastRelayLatencyMilliseconds}; titleLength={title.Length}; " +
+            $"avatar={(avatarPath is null ? "unavailable" : "local")}; " +
+            $"activation={(activationUri is not null ? "exact" : _settings.OpenDirectMessagesWhenLinkUnavailable ? "fallback" : "disabled")}; sound={_settings.Sound}.");
+        SaveStatus(accessStatus, null);
     }
 
     private bool IsDiscordSource(UserNotification notification)

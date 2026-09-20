@@ -3,16 +3,16 @@
 ## Build
 
 ```powershell
-./scripts/publish.ps1 -Version 1.0.1
+./scripts/publish.ps1 -Version 1.0.2
 $env:WIX_ACCEPT_EULA = 'true'
-./scripts/build-msi.ps1 -Version 1.0.1
+./scripts/build-msi.ps1 -Version 1.0.2
 ```
 
 Outputs:
 
 ```text
-artifacts/release/PDB-1.0.1-win-x64.zip
-artifacts/msi/PDB-1.0.1-x64.msi
+artifacts/release/PDB-1.0.2-win-x64.zip
+artifacts/msi/PDB-1.0.2-x64.msi
 ```
 
 WiX 7 requires OSMF EULA acceptance. Set `WIX_ACCEPT_EULA` only when authorized.
@@ -24,7 +24,7 @@ Sign `PDB.exe`, `PDB.Worker.exe`, and the MSI with Authenticode before a product
 ## Publish
 
 1. Test the MSI on clean Windows.
-2. Tag the commit as `v1.0.1`.
+2. Tag the commit as `v1.0.2`.
 3. Run the `release` workflow.
 4. Verify signatures and SHA-256 checksums.
 

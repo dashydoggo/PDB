@@ -38,31 +38,53 @@ namespace DashyDen.PDB.Infrastructure
             bool includeAvatar,
             bool includeActivation)
         {
+            for (int attempt = 0; attempt < 3; attempt++)
+            {
+                byte[] payload = ReadPayload(notificationId);
+                if (payload != null && payload.Length != 0)
+                {
+                    return TryRecoverDetailsFromPayload(
+                        notificationId,
+                        dataDirectory,
+                        payload,
+                        includeAvatar,
+                        includeActivation);
+                }
+                if (attempt < 2)
+                {
+                    Thread.Sleep(10);
+                }
+            }
+            return new RecoveredNotificationDetails();
+        }
+
+        internal static RecoveredNotificationDetails TryRecoverDetailsFromPayload(
+            uint notificationId,
+            string dataDirectory,
+            byte[] payload,
+            bool includeAvatar,
+            bool includeActivation)
+        {
             var details = new RecoveredNotificationDetails();
+            if (includeActivation)
+            {
+                try
+                {
+                    details.ActivationUri = ExtractSafeActivationUri(payload);
+                }
+                catch
+                {
+                }
+            }
+            if (!includeAvatar)
+            {
+                return details;
+            }
+
             for (int attempt = 0; attempt < 3; attempt++)
             {
                 try
                 {
-                    byte[] payload = ReadPayload(notificationId);
-                    if (payload == null || payload.Length == 0)
-                    {
-                        if (attempt < 2)
-                        {
-                            Thread.Sleep(10);
-                            continue;
-                        }
-                        return details;
-                    }
-
-                    if (includeActivation)
-                    {
-                        details.ActivationUri = ExtractSafeActivationUri(payload);
-                    }
-                    if (!includeAvatar)
-                    {
-                        return details;
-                    }
-
                     string sourcePath = ExtractSafeSourcePath(payload);
                     if (sourcePath == null)
                     {
@@ -335,6 +357,12 @@ namespace DashyDen.PDB.Infrastructure
 
         [DllImport("winsqlite3.dll", CallingConvention = CallingConvention.Cdecl)]
         internal static extern int sqlite3_step(IntPtr statement);
+
+        [DllImport("winsqlite3.dll", CallingConvention = CallingConvention.Cdecl)]
+        internal static extern long sqlite3_column_int64(IntPtr statement, int column);
+
+        [DllImport("winsqlite3.dll", CallingConvention = CallingConvention.Cdecl)]
+        internal static extern IntPtr sqlite3_column_text(IntPtr statement, int column);
 
         [DllImport("winsqlite3.dll", CallingConvention = CallingConvention.Cdecl)]
         internal static extern IntPtr sqlite3_column_blob(IntPtr statement, int column);

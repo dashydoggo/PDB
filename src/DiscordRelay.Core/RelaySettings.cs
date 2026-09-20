@@ -82,7 +82,7 @@ public sealed record RelaySettings
 
 public sealed record RelayStatus
 {
-    public string Version { get; init; } = "1.0.1";
+    public string Version { get; init; } = "1.0.2";
     public int ProcessId { get; init; }
     public int SessionId { get; init; }
     public DateTimeOffset StartedAt { get; init; }

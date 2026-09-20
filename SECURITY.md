@@ -10,4 +10,4 @@ Do not open a public issue for a vulnerability that could expose notification te
 
 ## Security boundaries
 
-The relay does not use a Discord user token or automate a Discord account. It reads Windows notification metadata locally. Sender-avatar recovery reads the local Windows notification database using a read-only SQLite connection and accepts image files only from the current user's temporary directory after path, extension, reparse-point, and size validation. Notification text is not written to logs.
+The relay does not use a Discord user token or automate a Discord account. It reads new Discord notification metadata directly from the local Windows notification database using a read-only SQLite connection, uses only the title and routing metadata, and does not write notification text to logs. Sender-avatar recovery accepts image files only from the current user's temporary directory after path, extension, reparse-point, and size validation.

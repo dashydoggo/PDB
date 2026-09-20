@@ -7,7 +7,7 @@ namespace DashyDen.DiscordRelay.Worker;
 
 internal static class Program
 {
-    internal const string Version = "1.0.1";
+    internal const string Version = "1.0.2";
 
     [MTAThread]
     private static int Main(string[] args)

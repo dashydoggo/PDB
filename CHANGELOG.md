@@ -2,6 +2,14 @@
 
 All notable changes will be documented in this file. Versioning follows Semantic Versioning.
 
+## [1.0.2] - 2026-09-20
+
+### Fixed
+
+- Read new Discord notification payloads directly from the local Windows notification database.
+- Retained `UserNotificationListener` for access authorization and database-read fallback.
+- Reduced measured source-to-PDB submission latency from approximately 300 ms to tens of milliseconds.
+
 ## [1.0.1] - 2026-09-20
 
 ### Fixed
